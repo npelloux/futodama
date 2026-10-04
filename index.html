@@ -1,7 +1,7 @@
 <meta charset="utf-8">
 <title>Futodama</title>
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Newsreader:ital,opsz,wght@0,6..72,400;1,6..72,400&display=swap">
 <style>
 /* Mise en page : la décision en tête, puis saisie et paramètres côte à côte, puis les trois vues pleine largeur. */
 :root{
@@ -923,4 +923,24 @@ if(window.ResizeObserver){
   }).observe($('c-eng'));
 }
 })();
+</script>
+<script src="intention.js"></script>
+<script>
+/* Mode Intention : pourquoi Futodama existe, posé sur l'outil lui-même. */
+Intention.monter({
+  racine:'main.page',
+  ancrage:'.tete > div',
+  titre:'Pourquoi Futodama existe',
+  reperes:[
+    {cible:'.stat.hero',libelle:'Niveau de confiance',phrase:'« Ce que nous acceptons comme incertitude. »'},
+    {cible:'.duo > section.panel',libelle:'Historique',phrase:'« Ce que nous savons. »'},
+    {cible:'#c-eng',libelle:'Distribution',phrase:'« Ce que nous supposons possible. »'}
+  ],
+  onglets:[
+    {id:'intention',titre:'Intention',html:'<p>Les engagements trimestriels se négocient souvent à l\'intuition, puis se jugent au réalisé. Une équipe s\'engage sur un nombre de Features et découvre trois mois plus tard ce qu\'elle a vraiment fabriqué. L\'historique existe, mais il sert rarement à fixer le prochain engagement.</p><p>Futodama explore une question : le passé d\'une équipe peut-il dire ce qu\'il est raisonnable de promettre, et avec quelle confiance ?</p>'},
+    {id:'hypotheses',titre:'Hypothèses',html:'<ul><li>Les trimestres retenus sont représentatifs du système futur.</li><li>La capacité de fabrication ne dépend pas du nombre de Features engagées.</li><li>« 80/80 » est une convention de travail, pas une norme.</li></ul>'},
+    {id:'limites',titre:'Limites',html:'<ul><li>C\'est une estimation fondée sur le passé, jamais une garantie.</li><li>Futodama ne mesure pas la performance d\'une équipe et ne sert pas à comparer des équipes.</li><li>Il ne voit ni la taille des Features ni les changements de contexte.</li></ul>'},
+    {id:'perspectives',titre:'Perspectives',html:'<ul><li>Un moteur de comptage (Poisson, binomiale négative).</li><li>Un modèle conditionnel où la fabrication dépend de l\'engagement.</li><li>Comprendre ce que les équipes font du chiffre une fois qu\'il est affiché.</li></ul>'}
+  ]
+});
 </script>

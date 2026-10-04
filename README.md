@@ -22,7 +22,7 @@ export CSV ou JSON.
 
 ## Déploiement
 
-Chaque push sur `main` lance les tests, puis dépose `index.html`, `moteur.js`
+Chaque push sur `main` lance les tests, puis dépose `index.html`, `moteur.js`, `intention.js`
 et les images dans `outils/futodama/` sur l'hébergement web IONOS
 d'aelworks.fr (`.github/workflows/deploy.yml`). Le dépôt doit avoir les secrets
 `SFTP_SERVER`, `SFTP_USERNAME` et `SFTP_PASS`.
@@ -32,6 +32,7 @@ d'aelworks.fr (`.github/workflows/deploy.yml`). Le dépôt doit avoir les secret
 | Fichier | Rôle |
 |---|---|
 | `moteur.js` | Couche données (normalisation F / E / P, sélection, CSV, JSON) et moteur statistique (empirique, Monte-Carlo, Student). Aucun accès au DOM. |
+| `intention.js` | Mode Intention : suspend l'outil, pose des repères sur ses zones et explique pourquoi il existe. Indépendant du moteur, le contenu est déclaré en bas de `index.html`. |
 | `index.html` | Interface et graphiques. Ne contient aucune logique statistique : elle appelle le moteur et trace les séries reçues. |
 | `moteur.test.js` | Tests unitaires du moteur. |
 
