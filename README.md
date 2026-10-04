@@ -1,4 +1,6 @@
-# Engagement 80/80
+<img src="futodama-logo.png" alt="Futodama" width="320">
+
+# Futodama
 
 Application web mono-page qui analyse l'historique trimestriel d'une équipe et
 estime combien de Features engager au prochain trimestre pour tenir une
@@ -12,7 +14,7 @@ Un outil open source d'[AELWorks](https://aelworks.fr/).
 
 ## Utilisation
 
-En ligne : <https://aelworks.fr/outils/engagement-8080/>
+En ligne : <https://aelworks.fr/outils/futodama/> (miroir GitHub Pages : <https://npelloux.github.io/futodama/>)
 
 En local : ouvrir `index.html` dans un navigateur. Aucune installation, aucun serveur :
 les données restent dans le stockage local du navigateur, avec import et
@@ -21,7 +23,7 @@ export CSV ou JSON.
 ## Déploiement
 
 Chaque push sur `main` lance les tests, puis dépose `index.html`, `moteur.js`
-et le logo dans `outils/engagement-8080/` sur l'hébergement web IONOS
+et les images dans `outils/futodama/` sur l'hébergement web IONOS
 d'aelworks.fr (`.github/workflows/deploy.yml`). Le dépôt doit avoir les secrets
 `SFTP_SERVER`, `SFTP_USERNAME` et `SFTP_PASS`.
 

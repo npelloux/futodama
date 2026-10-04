@@ -1,10 +1,10 @@
 {
-  "name": "engagement-8080",
+  "name": "futodama",
   "version": "0.1.0",
   "private": true,
   "license": "MIT",
   "author": "AELWorks (https://aelworks.fr/)",
-  "homepage": "https://aelworks.fr/outils/engagement-8080/",
+  "homepage": "https://aelworks.fr/outils/futodama/",
   "description": "Estime combien de Features engager au prochain trimestre pour tenir une prédictibilité cible avec un niveau de confiance donné.",
   "scripts": {
     "test": "node --test"

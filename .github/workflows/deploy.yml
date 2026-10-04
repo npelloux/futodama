@@ -24,9 +24,9 @@ jobs:
       - name: Préparer les fichiers publiés
         run: |
           mkdir -p dist
-          cp index.html moteur.js aelworks-logo.png dist/
+          cp index.html moteur.js aelworks-logo.png futodama-icon.png favicon.png dist/
 
-      # Publié sous aelworks.fr/outils/engagement-8080/ sur l'hébergement web IONOS.
+      # Publié sous aelworks.fr/outils/futodama/ sur l'hébergement web IONOS.
       - name: Déploiement IONOS par SFTP
         uses: Dylan700/sftp-upload-action@latest
         with:
@@ -34,4 +34,4 @@ jobs:
           username: ${{ secrets.SFTP_USERNAME }}
           password: ${{ secrets.SFTP_PASS }}
           port: 22
-          uploads: ./dist/ => ./outils/engagement-8080/
+          uploads: ./dist/ => ./outils/futodama/
