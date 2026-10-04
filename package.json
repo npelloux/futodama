@@ -4,7 +4,7 @@
   "private": true,
   "license": "MIT",
   "author": "AELWorks (https://aelworks.fr/)",
-  "homepage": "https://aelworks.fr/outils/futodama/",
+  "homepage": "https://futodama.aelworks.fr/",
   "description": "Estime combien de Features engager au prochain trimestre pour tenir une prédictibilité cible avec un niveau de confiance donné.",
   "scripts": {
     "test": "node --test"
