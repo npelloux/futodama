@@ -1,4 +1,4 @@
-name: Déploiement aelworks.fr
+name: Tests et image
 
 on:
   push:
@@ -14,27 +14,6 @@ jobs:
         with:
           node-version: 20
       - run: npm test
-
-  deploy-ionos:
-    needs: test
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Préparer les fichiers publiés
-        run: |
-          mkdir -p dist
-          cp index.html moteur.js intention.js aelworks-logo.png futodama-icon.png favicon.png dist/
-
-      # Publié sous aelworks.fr/outils/futodama/ sur l'hébergement web IONOS.
-      - name: Déploiement IONOS par SFTP
-        uses: Dylan700/sftp-upload-action@latest
-        with:
-          server: ${{ secrets.SFTP_SERVER }}
-          username: ${{ secrets.SFTP_USERNAME }}
-          password: ${{ secrets.SFTP_PASS }}
-          port: 22
-          uploads: ./dist/ => ./outils/futodama/
 
   # Image servie par le serveur sur futodama.aelworks.fr (ghcr.io/npelloux/futodama).
   image:

@@ -14,7 +14,7 @@ Un outil open source d'[AELWorks](https://aelworks.fr/).
 
 ## Utilisation
 
-En ligne : <https://aelworks.fr/outils/futodama/> (miroir GitHub Pages : <https://npelloux.github.io/futodama/>)
+En ligne : <https://futodama.aelworks.fr/> (miroir GitHub Pages : <https://npelloux.github.io/futodama/>)
 
 En local : ouvrir `index.html` dans un navigateur. Aucune installation, aucun serveur :
 les données restent dans le stockage local du navigateur, avec import et
@@ -22,10 +22,10 @@ export CSV ou JSON.
 
 ## Déploiement
 
-Chaque push sur `main` lance les tests, puis dépose `index.html`, `moteur.js`, `intention.js`
-et les images dans `outils/futodama/` sur l'hébergement web IONOS
-d'aelworks.fr (`.github/workflows/deploy.yml`). Le dépôt doit avoir les secrets
-`SFTP_SERVER`, `SFTP_USERNAME` et `SFTP_PASS`.
+Chaque push sur `main` lance les tests, puis publie l'image `ghcr.io/npelloux/futodama`
+(nginx, `Dockerfile`) que le serveur d'aelworks sert sur futodama.aelworks.fr
+(`.github/workflows/deploy.yml`). L'ancienne adresse `aelworks.fr/outils/futodama/`
+redirige vers ce sous-domaine.
 
 ## Structure
 
