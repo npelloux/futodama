@@ -924,10 +924,12 @@ if(window.ResizeObserver){
 }
 })();
 </script>
-<script src="intention.js"></script>
+<script src="https://aelworks.fr/commun/intention.js"></script>
 <script>
-/* Mode Intention : pourquoi Futodama existe, posé sur l'outil lui-même. */
-Intention.monter({
+/* Mode Intention : pourquoi Futodama existe, posé sur l'outil lui-même.
+   Les textes viennent de l'admin d'aelworks.fr ; « onglets » sert de secours si le site ne répond pas. */
+if(window.Intention) Intention.charger({
+  source:'https://aelworks.fr/contenu/futodama.json',
   racine:'main.page',
   ancrage:'.tete > div',
   titre:'Pourquoi Futodama existe',
