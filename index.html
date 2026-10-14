@@ -135,7 +135,7 @@ textarea{font-family:var(--mono);font-size:12.5px;width:100%;min-height:150px;re
 .g-dot{stroke:var(--surface);stroke-width:2}
 .g-xhair{stroke:var(--ref);stroke-width:1}
 .c-ink{stroke:var(--ink)} .c-s1{stroke:var(--s1)} .c-s2{stroke:var(--s2)} .c-gris{stroke:var(--ref)} .c-obj{stroke:var(--objectif)}
-.f-ink{fill:var(--ink)} .f-s1{fill:var(--s1)} .f-s2{fill:var(--s2)} .f-surface{fill:var(--surface)}
+.f-ink{fill:var(--ink)} .f-s1{fill:var(--s1)} .f-s2{fill:var(--s2)} .f-surface{fill:var(--surface)} .f-env{fill:var(--z5)}
 .dots{stroke-dasharray:2 5}
 .tirets{stroke-dasharray:6 5}
 path.z1,path.z2,path.z3,path.z4,path.z5{fill-opacity:var(--z-op)}
@@ -302,6 +302,15 @@ path.z1{fill:var(--z1)} path.z2{fill:var(--z2)} path.z3{fill:var(--z3)} path.z4{
 
   <section class="panel">
     <div>
+      <h2>Historique : fabrication, engagement, prédictibilité</h2>
+      <p class="sub" id="sub-hist"></p>
+    </div>
+    <div class="legend" id="lg-hist"></div>
+    <div class="chart" id="c-hist"><div class="svg"></div><div class="tip" hidden></div></div>
+  </section>
+
+  <section class="panel">
+    <div>
       <h2>Confiance selon l'objectif de fabrication</h2>
       <p class="sub">Probabilité de fabriquer au moins ce nombre de Features au prochain trimestre, quel que soit l'engagement pris.</p>
     </div>
@@ -313,15 +322,6 @@ path.z1{fill:var(--z1)} path.z2{fill:var(--z2)} path.z3{fill:var(--z3)} path.z4{
     </div>
     <div class="chart pick" id="c-fab"><div class="svg"></div><div class="tip" hidden></div></div>
     <div class="legend zones"></div>
-  </section>
-
-  <section class="panel">
-    <div>
-      <h2>Historique : fabrication, engagement, prédictibilité</h2>
-      <p class="sub" id="sub-hist"></p>
-    </div>
-    <div class="legend" id="lg-hist"></div>
-    <div class="chart" id="c-hist"><div class="svg"></div><div class="tip" hidden></div></div>
   </section>
 
   <div class="method">
@@ -513,7 +513,7 @@ function rendre(){
     tip:function(x,c){return 'Objectif : <b>'+esc(feat(x))+'</b><br>Confiance estimée : <b>'+pct(c)+'</b> · '+ZONES[zoneOf(c)].label;},
     onPick:function(x){state.fab=x; rendre();}
   });
-  rendreHistorique();
+  rendreHistorique(eng,cEng);
 }
 
 function majCurseur(nom,range,val,c,quoi){
@@ -644,8 +644,8 @@ function trait(cls,extra){
 function croix(cx,cy){
   return '<path class="g-line c-gris" d="M'+f1(cx-4)+','+f1(cy-4)+'L'+f1(cx+4)+','+f1(cy+4)+'M'+f1(cx-4)+','+f1(cy+4)+'L'+f1(cx+4)+','+f1(cy-4)+'"/>';
 }
-function rendreHistorique(){
-  var el=$('c-hist'), box=el.querySelector('.svg'), rows=calc.norm, pred=calc.pred;
+function rendreHistorique(eng,cEng){
+  var el=$('c-hist'), box=el.querySelector('.svg'), rows=calc.norm.slice(), pred=calc.pred;
   el._geo=null;
   var retenus={}; calc.obs.forEach(function(o){retenus[o.quarter]=true;});
   var hasE=rows.some(function(r){return r.committed!==null;}), hasP=rows.some(function(r){return r.predictability!==null;});
@@ -656,12 +656,21 @@ function rendreHistorique(){
     (hasE?'<span>'+trait('c-s2','<circle class="f-s2" cx="13" cy="6" r="3.5"/>')+'Features engagées</span>'+
       '<span>'+trait('c-s2 dots')+state.params.predTarget+NB+'% de l\'engagement passé</span>':'')+
     (hasP?'<span>'+trait('c-gris dots',croix(13,6))+'Prédictibilité (axe de droite)</span>'+
-      '<span>'+trait('c-obj tirets')+'Prédictibilité cible '+state.params.predTarget+NB+'%</span>':'');
+      '<span>'+trait('c-obj tirets')+'Prédictibilité cible '+state.params.predTarget+NB+'%</span>':'')+
+    (eng!==undefined?'<span><svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true"><circle class="f-env" cx="13" cy="6" r="4.5"/></svg>Engagement envisagé (prochain trimestre)</span>':'');
   if(!rows.length){box.innerHTML='<p class="vide">Aucun trimestre saisi.</p>';return;}
+  // Le prochain trimestre : premier créneau vide après la dernière observation, sinon un créneau ajouté.
+  var iEng=-1;
+  if(eng!==undefined){
+    var der=-1; rows.forEach(function(r,i){if(r.made!==null) der=i;});
+    for(var k=der+1;k<rows.length;k++){ if(rows[k].made===null && rows[k].committed===null){iEng=k;break;} }
+    if(iEng<0){ rows.push({quarter:M.nextQuarter(rows[rows.length-1].quarter),made:null,committed:null,predictability:null,virtuel:true}); iEng=rows.length-1; }
+  }
 
   var W=Math.max(280,el.clientWidth), H=W<520?300:380;
   var m={t:30,r:hasP?50:14,b:32,l:50}, pw=W-m.l-m.r, ph=H-m.t-m.b, n=rows.length;
   var max=1; rows.forEach(function(r){max=Math.max(max,r.made||0,r.committed||0);});
+  if(iEng>=0) max=Math.max(max,eng);
   var st=niceStep(max,5), top=Math.ceil(max/st)*st, K=top;
   // Alignement des axes : 100 Features à gauche = 100 % à droite (pour les petits volumes, 100 % = haut du graphe).
   if(hasP && max>=50){top=Math.max(top,100); K=100;}
@@ -714,10 +723,14 @@ function rendreHistorique(){
       ? '<circle class="g-dot f-s1" cx="'+f1(x(i))+'" cy="'+f1(y(r.made))+'" r="4.5"/>'
       : '<circle class="f-surface c-s1" stroke-width="2" cx="'+f1(x(i))+'" cy="'+f1(y(r.made))+'" r="4.5"/>';
   });
+  if(iEng>=0){
+    s+='<circle class="g-dot f-env" cx="'+f1(x(iEng))+'" cy="'+f1(y(eng))+'" r="5.5"/>';
+    s+='<text class="g-label" x="'+f1(x(iEng))+'" y="'+f1(y(eng)-12)+'" text-anchor="middle">'+n0.format(eng)+'</text>';
+  }
   s+='<line class="g-xhair" visibility="hidden" y1="'+m.t+'" y2="'+f1(y(0))+'"/>';
   s+='</svg>';
   box.innerHTML=s;
-  el._geo={m:m,pw:pw,W:W,n:n,x:x,y:y,rows:rows,retenus:retenus,pred:pred};
+  el._geo={m:m,pw:pw,W:W,n:n,x:x,y:y,rows:rows,retenus:retenus,pred:pred,iEng:iEng,eng:eng,cEng:cEng};
 }
 function brancherHistorique(){
   var el=$('c-hist'), tip=el.querySelector('.tip');
@@ -728,7 +741,9 @@ function brancherHistorique(){
     var l=el.querySelector('.g-xhair');
     l.setAttribute('x1',cx); l.setAttribute('x2',cx); l.setAttribute('visibility','visible');
     var h='<b>'+esc(M.quarterLabel(row.quarter))+'</b>';
-    if(row.made===null && row.committed===null) h+='<br>Pas encore de données';
+    if(i===g.iEng){
+      h+='<br>Engagement envisagé : '+nf.format(g.eng)+'<br>Confiance estimée : '+pct(g.cEng);
+    }else if(row.made===null && row.committed===null) h+='<br>Pas encore de données';
     if(row.made!==null) h+='<br>Fabriquées : '+nf.format(row.made)+(g.retenus[row.quarter]?'':' (non retenu pour le calcul)');
     if(row.committed!==null){
       h+='<br>Engagées : '+nf.format(row.committed)+(row.derived==='committed'?' (calculé)':'');
@@ -736,7 +751,7 @@ function brancherHistorique(){
     }
     if(row.predictability!==null) h+='<br>Prédictibilité : '+Math.round(row.predictability*100)+NB+'%';
     tip.hidden=false; tip.innerHTML=h;
-    placer(tip,cx*k,g.y(row.made!==null?row.made:0)*k,r.width);
+    placer(tip,cx*k,g.y(i===g.iEng?g.eng:row.made!==null?row.made:0)*k,r.width);
   });
   el.addEventListener('pointerleave',function(){cacher(el);});
 }
