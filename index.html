@@ -136,6 +136,7 @@ textarea{font-family:var(--mono);font-size:12.5px;width:100%;min-height:150px;re
 .g-xhair{stroke:var(--ref);stroke-width:1}
 .c-ink{stroke:var(--ink)} .c-s1{stroke:var(--s1)} .c-s2{stroke:var(--s2)} .c-gris{stroke:var(--ref)} .c-obj{stroke:var(--objectif)}
 .f-ink{fill:var(--ink)} .f-s1{fill:var(--s1)} .f-s2{fill:var(--s2)} .f-surface{fill:var(--surface)} .f-env{fill:var(--z5)}
+.c-tend{stroke:var(--s1);stroke-width:1.5}
 .dots{stroke-dasharray:2 5}
 .tirets{stroke-dasharray:6 5}
 path.z1,path.z2,path.z3,path.z4,path.z5{fill-opacity:var(--z-op)}
@@ -649,6 +650,8 @@ function rendreHistorique(eng,cEng){
   el._geo=null;
   var retenus={}; calc.obs.forEach(function(o){retenus[o.quarter]=true;});
   var hasE=rows.some(function(r){return r.committed!==null;}), hasP=rows.some(function(r){return r.predictability!==null;});
+  // Tendance : régression sur les seuls trimestres retenus, en abscisse l'index de trimestre (les trous comptent).
+  var tend=M.linearTrend(calc.obs.map(function(o){return {x:M.quarterIndex(o.quarter),y:o.value};}));
   $('sub-hist').textContent=hasE
     ? 'La courbe orange pointillée vaut '+state.params.predTarget+NB+'% de l\'engagement de chaque trimestre passé. C\'est un repère historique, pas l\'engagement recommandé ci-dessus.'
     : 'Ajoutez les Features engagées ou la prédictibilité pour comparer la fabrication à l\'engagement.';
@@ -657,7 +660,8 @@ function rendreHistorique(eng,cEng){
       '<span>'+trait('c-s2 dots')+state.params.predTarget+NB+'% de l\'engagement passé</span>':'')+
     (hasP?'<span>'+trait('c-gris dots',croix(13,6))+'Prédictibilité (axe de droite)</span>'+
       '<span>'+trait('c-obj tirets')+'Prédictibilité cible '+state.params.predTarget+NB+'%</span>':'')+
-    (eng!==undefined?'<span><svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true"><circle class="f-env" cx="13" cy="6" r="4.5"/></svg>Engagement envisagé (prochain trimestre)</span>':'');
+    (eng!==undefined?'<span><svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true"><circle class="f-env" cx="13" cy="6" r="4.5"/></svg>Engagement envisagé (prochain trimestre)</span>':'')+
+    (tend?'<span>'+trait('c-tend tirets')+'Tendance des trimestres retenus (régression linéaire)</span>':'');
   if(!rows.length){box.innerHTML='<p class="vide">Aucun trimestre saisi.</p>';return;}
   // Le prochain trimestre : premier créneau vide après la dernière observation, sinon un créneau ajouté.
   var iEng=-1;
@@ -671,6 +675,9 @@ function rendreHistorique(eng,cEng){
   var m={t:30,r:hasP?50:14,b:32,l:50}, pw=W-m.l-m.r, ph=H-m.t-m.b, n=rows.length;
   var max=1; rows.forEach(function(r){max=Math.max(max,r.made||0,r.committed||0);});
   if(iEng>=0) max=Math.max(max,eng);
+  var iFin=iEng>=0?iEng:rows.length-1, iDeb=-1;
+  rows.forEach(function(r,i){if(iDeb<0 && retenus[r.quarter]) iDeb=i;});
+  if(tend && iDeb>=0) max=Math.max(max,tend.at(M.quarterIndex(rows[iFin].quarter)),tend.at(M.quarterIndex(rows[iDeb].quarter)));
   var st=niceStep(max,5), top=Math.ceil(max/st)*st, K=top;
   // Alignement des axes : 100 Features à gauche = 100 % à droite (pour les petits volumes, 100 % = haut du graphe).
   if(hasP && max>=50){top=Math.max(top,100); K=100;}
@@ -723,6 +730,10 @@ function rendreHistorique(eng,cEng){
       ? '<circle class="g-dot f-s1" cx="'+f1(x(i))+'" cy="'+f1(y(r.made))+'" r="4.5"/>'
       : '<circle class="f-surface c-s1" stroke-width="2" cx="'+f1(x(i))+'" cy="'+f1(y(r.made))+'" r="4.5"/>';
   });
+  if(tend && iDeb>=0 && iFin>iDeb){
+    var yD=Math.max(0,tend.at(M.quarterIndex(rows[iDeb].quarter))), yF=Math.max(0,tend.at(M.quarterIndex(rows[iFin].quarter)));
+    s+='<line class="c-tend tirets" x1="'+f1(x(iDeb))+'" y1="'+f1(y(yD))+'" x2="'+f1(x(iFin))+'" y2="'+f1(y(yF))+'"/>';
+  }
   if(iEng>=0){
     s+='<circle class="g-dot f-env" cx="'+f1(x(iEng))+'" cy="'+f1(y(eng))+'" r="5.5"/>';
     s+='<text class="g-label" x="'+f1(x(iEng))+'" y="'+f1(y(eng)-12)+'" text-anchor="middle">'+n0.format(eng)+'</text>';
@@ -730,7 +741,7 @@ function rendreHistorique(eng,cEng){
   s+='<line class="g-xhair" visibility="hidden" y1="'+m.t+'" y2="'+f1(y(0))+'"/>';
   s+='</svg>';
   box.innerHTML=s;
-  el._geo={m:m,pw:pw,W:W,n:n,x:x,y:y,rows:rows,retenus:retenus,pred:pred,iEng:iEng,eng:eng,cEng:cEng};
+  el._geo={m:m,pw:pw,W:W,n:n,x:x,y:y,rows:rows,retenus:retenus,pred:pred,iEng:iEng,eng:eng,cEng:cEng,tend:tend};
 }
 function brancherHistorique(){
   var el=$('c-hist'), tip=el.querySelector('.tip');
@@ -743,7 +754,9 @@ function brancherHistorique(){
     var h='<b>'+esc(M.quarterLabel(row.quarter))+'</b>';
     if(i===g.iEng){
       h+='<br>Engagement envisagé : '+nf.format(g.eng)+'<br>Confiance estimée : '+pct(g.cEng);
+      if(g.tend) h+='<br>Tendance : '+nf.format(Math.max(0,g.tend.at(M.quarterIndex(row.quarter))));
     }else if(row.made===null && row.committed===null) h+='<br>Pas encore de données';
+    if(i!==g.iEng && g.tend && g.retenus[row.quarter]) h+='<br>Tendance : '+nf.format(Math.max(0,g.tend.at(M.quarterIndex(row.quarter))));
     if(row.made!==null) h+='<br>Fabriquées : '+nf.format(row.made)+(g.retenus[row.quarter]?'':' (non retenu pour le calcul)');
     if(row.committed!==null){
       h+='<br>Engagées : '+nf.format(row.committed)+(row.derived==='committed'?' (calculé)':'');

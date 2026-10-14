@@ -365,6 +365,18 @@ function bootstrapUncertainty(dataset,confidenceTarget,predictabilityTarget,opti
   return {low:res[Math.floor(0.05*(B-1))],median:res[Math.floor(0.5*(B-1))],high:res[Math.floor(0.95*(B-1))],resamples:B};
 }
 
+// Tendance linéaire (moindres carrés) sur des points {x, y} : y ≈ intercept + slope·x. null sous 2 points.
+function linearTrend(points){
+  var n=points.length;
+  if(n<2) return null;
+  var sx=0,sy=0; points.forEach(function(p){sx+=p.x; sy+=p.y;});
+  var mx=sx/n, my=sy/n, sxx=0, sxy=0;
+  points.forEach(function(p){sxx+=(p.x-mx)*(p.x-mx); sxy+=(p.x-mx)*(p.y-my);});
+  if(sxx===0) return null;
+  var slope=sxy/sxx;
+  return {slope:slope,intercept:my-slope*mx,n:n,at:function(x){return my+slope*(x-mx);}};
+}
+
 /* ======================= Contrôles de qualité ======================= */
 
 function quantileSorted(sorted,p){
@@ -432,6 +444,7 @@ return {
   generateConfidenceCurve:generateConfidenceCurve,
   suggestRange:suggestRange,
   bootstrapUncertainty:bootstrapUncertainty,
+  linearTrend:linearTrend,
   // qualité
   diagnose:diagnose
 };

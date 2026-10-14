@@ -156,3 +156,12 @@ test('incertitude bootstrap : intervalle ordonné, reproductible',()=>{
   assert.deepEqual(a,b);
   assert.ok(a.low<=a.median && a.median<=a.high);
 });
+
+test('tendance linéaire : moindres carrés, null sous deux points',()=>{
+  const t=M.linearTrend([{x:0,y:1},{x:1,y:3},{x:2,y:5}]);
+  proche(t.slope,2,1e-12); proche(t.intercept,1,1e-12); proche(t.at(3),7,1e-12);
+  const b=M.linearTrend([{x:0,y:10},{x:1,y:8},{x:2,y:12},{x:3,y:10}]);
+  proche(b.slope,0.4,1e-12);
+  assert.equal(M.linearTrend([{x:0,y:1}]),null);
+  assert.equal(M.linearTrend([{x:1,y:1},{x:1,y:2}]),null);
+});
