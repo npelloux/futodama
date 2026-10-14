@@ -143,6 +143,13 @@ path.z1{fill:var(--z1)} path.z2{fill:var(--z2)} path.z3{fill:var(--z3)} path.z4{
 .method{font-size:13px;color:var(--ink-2);max-width:80ch;display:flex;flex-direction:column;gap:6px}
 .credit{display:flex;flex-wrap:wrap;gap:6px 20px;justify-content:space-between;font-size:13px;color:var(--ink-2);border-top:1px solid var(--grid);padding-top:14px}
 .credit a{color:var(--accent);font-weight:500}
+.credit .fin{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:center}
+.theme{display:inline-flex;align-items:center;gap:8px}
+.theme .seg{display:inline-flex;border:1px solid var(--axis);border-radius:6px;overflow:hidden}
+.theme .seg button{border:0;border-radius:0;padding:4px 10px;font-size:12.5px;color:var(--ink-2);background:transparent}
+.theme .seg button+button{border-left:1px solid var(--axis)}
+.theme .seg button[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.theme .seg button:focus-visible{outline-offset:-2px}
 
 @media (max-width:860px){
   .duo{grid-template-columns:minmax(0,1fr)}
@@ -158,6 +165,10 @@ path.z1{fill:var(--z1)} path.z2{fill:var(--z2)} path.z3{fill:var(--z3)} path.z4{
   .curseur label,.curseur output{grid-column:1/-1}
 }
 </style>
+<script>
+// Applique le thème mémorisé avant le premier rendu pour éviter un flash.
+(function(){try{var t=localStorage.getItem('futodama:theme');if(t==='dark'||t==='light')document.documentElement.setAttribute('data-theme',t);}catch(_){}})();
+</script>
 
 <main class="page">
   <header class="tete">
@@ -320,7 +331,14 @@ path.z1{fill:var(--z1)} path.z2{fill:var(--z2)} path.z3{fill:var(--z3)} path.z4{
 
   <footer class="credit">
     <span class="marque"><img src="aelworks-logo.png" alt="" width="28" height="28">Futodama, un outil open source d'<a href="https://aelworks.fr/" target="_blank" rel="noopener">AELWorks</a></span>
-    <a href="https://github.com/npelloux/futodama" target="_blank" rel="noopener">Code source, licence MIT</a>
+    <span class="fin">
+      <span class="theme"><span id="theme-lab">Thème</span>
+        <span class="seg" role="group" aria-labelledby="theme-lab">
+          <button type="button" data-theme="system" aria-pressed="false">Système</button><button type="button" data-theme="light" aria-pressed="false">Clair</button><button type="button" data-theme="dark" aria-pressed="false">Sombre</button>
+        </span>
+      </span>
+      <a href="https://github.com/npelloux/futodama" target="_blank" rel="noopener">Code source, licence MIT</a>
+    </span>
   </footer>
 </main>
 
@@ -904,6 +922,29 @@ $('h-n').addEventListener('focus',function(){$('h-last').checked=true; lireParam
     state[c[1]]=Math.round(v); rendre();
   });
 });
+
+/* ---------- Thème clair / sombre ---------- */
+(function(){
+  var boutons=document.querySelectorAll('.theme .seg button');
+  function courant(){
+    var t=document.documentElement.getAttribute('data-theme');
+    return t==='dark'||t==='light'?t:'system';
+  }
+  function afficher(){
+    var c=courant();
+    boutons.forEach(function(b){b.setAttribute('aria-pressed',b.dataset.theme===c?'true':'false');});
+  }
+  boutons.forEach(function(b){
+    b.addEventListener('click',function(){
+      var t=b.dataset.theme;
+      if(t==='system') document.documentElement.removeAttribute('data-theme');
+      else document.documentElement.setAttribute('data-theme',t);
+      try{ if(t==='system') localStorage.removeItem('futodama:theme'); else localStorage.setItem('futodama:theme',t); }catch(_){}
+      afficher();
+    });
+  });
+  afficher();
+})();
 
 /* ---------- Démarrage ---------- */
 document.querySelectorAll('.legend.zones').forEach(function(el){
