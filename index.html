@@ -343,7 +343,7 @@ path.z1{fill:var(--z1)} path.z2{fill:var(--z2)} path.z3{fill:var(--z3)} path.z4{
   </footer>
 </main>
 
-<script src="moteur.js"></script>
+<script src="moteur.js?v=20261014"></script>
 <script>
 (function(){
 'use strict';
@@ -651,7 +651,7 @@ function rendreHistorique(eng,cEng){
   var retenus={}; calc.obs.forEach(function(o){retenus[o.quarter]=true;});
   var hasE=rows.some(function(r){return r.committed!==null;}), hasP=rows.some(function(r){return r.predictability!==null;});
   // Tendance : régression sur les seuls trimestres retenus, en abscisse l'index de trimestre (les trous comptent).
-  var tend=M.linearTrend(calc.obs.map(function(o){return {x:M.quarterIndex(o.quarter),y:o.value};}));
+  var tend=M.linearTrend?M.linearTrend(calc.obs.map(function(o){return {x:M.quarterIndex(o.quarter),y:o.value};})):null;
   $('sub-hist').textContent=hasE
     ? 'La courbe orange pointillée vaut '+state.params.predTarget+NB+'% de l\'engagement de chaque trimestre passé. C\'est un repère historique, pas l\'engagement recommandé ci-dessus.'
     : 'Ajoutez les Features engagées ou la prédictibilité pour comparer la fabrication à l\'engagement.';
