@@ -25,7 +25,9 @@ export CSV ou JSON.
 Chaque push sur `main` lance les tests, puis publie l'image `ghcr.io/npelloux/futodama`
 (nginx, `Dockerfile`) que le serveur d'aelworks sert sur futodama.aelworks.fr
 (`.github/workflows/deploy.yml`). L'ancienne adresse `aelworks.fr/outils/futodama/`
-redirige vers ce sous-domaine.
+redirige vers ce sous-domaine. Le serveur reprend la nouvelle image à la main
+(`docker compose pull` puis `up -d`) ou automatiquement avec Watchtower :
+voir [`docs/mise-a-jour-automatique.md`](docs/mise-a-jour-automatique.md).
 
 ## Structure
 
