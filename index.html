@@ -117,6 +117,7 @@ textarea{font-family:var(--mono);font-size:12.5px;width:100%;min-height:150px;re
 .legend button.lg:hover{text-decoration:underline;background:none}
 .legend button.lg[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
 .legend button.lg[aria-pressed="false"]:hover{text-decoration:line-through underline}
+.legend button.tout{color:var(--accent);font-weight:500}
 .curseur{display:grid;grid-template-columns:auto minmax(120px,1fr) 84px auto;gap:10px 14px;align-items:center;font-size:14px}
 .curseur label{font-weight:500}
 .curseur input[type="range"]{width:100%;min-width:0}
@@ -661,7 +662,9 @@ function rendreHistorique(eng,cEng){
   var masq=state.masquees||[], vis=function(k){return masq.indexOf(k)<0;};
   var dess={fab:vis('fab'),eng:hasE&&vis('eng'),engc:hasE&&vis('engc'),pred:hasP&&vis('pred'),predc:hasP&&vis('predc'),env:eng!==undefined&&vis('env'),tend:!!tend&&vis('tend')};
   var axeP=dess.pred||dess.predc;
-  function lg(k,sw,txt){return '<button type="button" class="lg" data-k="'+k+'" aria-pressed="'+(vis(k)?'true':'false')+'" title="Afficher ou masquer">'+sw+txt+'</button>';}
+  function lg(k,sw,txt){return '<button type="button" class="lg" data-k="'+k+'" aria-pressed="'+(vis(k)?'true':'false')+'" title="'+(vis(k)?'Cliquer pour masquer cette série':'Série masquée : cliquer pour la réafficher')+'">'+sw+txt+'</button>';}
+  var cles=['fab'].concat(hasE?['eng','engc']:[],hasP?['pred','predc']:[],eng!==undefined?['env']:[],tend?['tend']:[]);
+  var nbMasquees=cles.filter(function(k){return !vis(k);}).length;
   $('sub-hist').textContent=hasE
     ? 'La courbe orange pointillée vaut '+state.params.predTarget+NB+'% de l\'engagement de chaque trimestre passé. C\'est un repère historique, pas l\'engagement recommandé ci-dessus.'
     : 'Ajoutez les Features engagées ou la prédictibilité pour comparer la fabrication à l\'engagement.';
@@ -671,7 +674,8 @@ function rendreHistorique(eng,cEng){
     (hasP?lg('pred',trait('c-gris dots',croix(13,6)),'Prédictibilité (axe de droite)')+
       lg('predc',trait('c-obj tirets'),'Prédictibilité cible '+state.params.predTarget+NB+'%'):'')+
     (eng!==undefined?lg('env','<svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true"><circle class="f-env" cx="13" cy="6" r="4.5"/></svg>','Engagement envisagé (prochain trimestre)'):'')+
-    (tend?lg('tend',trait('c-tend tirets'),'Tendance des trimestres retenus (régression linéaire)'):'');
+    (tend?lg('tend',trait('c-tend tirets'),'Tendance des trimestres retenus (régression linéaire)'):'')+
+    (nbMasquees?'<button type="button" class="lg tout" data-k="*">Tout réafficher ('+nbMasquees+' masquée'+(nbMasquees>1?'s':'')+')</button>':'');
   if(!rows.length){box.innerHTML='<p class="vide">Aucun trimestre saisi.</p>';return;}
   // Le prochain trimestre : premier créneau vide après la dernière observation, sinon un créneau ajouté.
   var iEng=-1;
@@ -785,7 +789,7 @@ function brancherHistorique(){
   $('lg-hist').addEventListener('click',function(ev){
     var b=ev.target.closest('button[data-k]'); if(!b) return;
     var k=b.dataset.k, m=state.masquees||[];
-    state.masquees=m.indexOf(k)<0?m.concat([k]):m.filter(function(e){return e!==k;});
+    state.masquees=k==='*'?[]:m.indexOf(k)<0?m.concat([k]):m.filter(function(e){return e!==k;});
     sauver(); rendre();
   });
 }
