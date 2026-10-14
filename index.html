@@ -113,6 +113,10 @@ textarea{font-family:var(--mono);font-size:12.5px;width:100%;min-height:150px;re
 .legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:13px;color:var(--ink-2)}
 .legend span{display:inline-flex;align-items:center;gap:7px}
 .legend svg{flex:none}
+.legend button.lg{border:0;border-radius:4px;background:none;padding:0;font:inherit;color:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:7px}
+.legend button.lg:hover{text-decoration:underline;background:none}
+.legend button.lg[aria-pressed="false"]{opacity:.45;text-decoration:line-through}
+.legend button.lg[aria-pressed="false"]:hover{text-decoration:line-through underline}
 .curseur{display:grid;grid-template-columns:auto minmax(120px,1fr) 84px auto;gap:10px 14px;align-items:center;font-size:14px}
 .curseur label{font-weight:500}
 .curseur input[type="range"]{width:100%;min-width:0}
@@ -390,7 +394,7 @@ function niceStep(span,target){
 function f1(v){return v.toFixed(1);}
 
 /* ================= État ================= */
-var state={rows:[],excluded:[],params:Object.assign({},DEFAUT),eng:null,fab:null};
+var state={rows:[],excluded:[],params:Object.assign({},DEFAUT),eng:null,fab:null,masquees:[]};
 var calc=null;
 
 function lignesExemple(){
@@ -401,7 +405,7 @@ function estExemple(){
     state.rows.every(function(r){return r.committed===null;});
 }
 function sauver(){
-  try{localStorage.setItem(CLE,JSON.stringify({rows:state.rows,excluded:state.excluded,params:state.params}));}catch(_){}
+  try{localStorage.setItem(CLE,JSON.stringify({rows:state.rows,excluded:state.excluded,params:state.params,masquees:state.masquees}));}catch(_){}
 }
 function restaurer(){
   try{
@@ -410,6 +414,7 @@ function restaurer(){
       state.rows=d.rows.filter(function(r){return r && M.parseQuarter(r.quarter);});
       state.excluded=Array.isArray(d.excluded)?d.excluded:[];
       state.params=Object.assign({},DEFAUT,d.params||{});
+      state.masquees=Array.isArray(d.masquees)?d.masquees:[];
       return true;
     }
   }catch(_){}
@@ -652,16 +657,21 @@ function rendreHistorique(eng,cEng){
   var hasE=rows.some(function(r){return r.committed!==null;}), hasP=rows.some(function(r){return r.predictability!==null;});
   // Tendance : régression sur les seuls trimestres retenus, en abscisse l'index de trimestre (les trous comptent).
   var tend=M.linearTrend?M.linearTrend(calc.obs.map(function(o){return {x:M.quarterIndex(o.quarter),y:o.value};})):null;
+  // Séries masquées depuis la légende (un clic les retire du tracé, un second les remet).
+  var masq=state.masquees||[], vis=function(k){return masq.indexOf(k)<0;};
+  var dess={fab:vis('fab'),eng:hasE&&vis('eng'),engc:hasE&&vis('engc'),pred:hasP&&vis('pred'),predc:hasP&&vis('predc'),env:eng!==undefined&&vis('env'),tend:!!tend&&vis('tend')};
+  var axeP=dess.pred||dess.predc;
+  function lg(k,sw,txt){return '<button type="button" class="lg" data-k="'+k+'" aria-pressed="'+(vis(k)?'true':'false')+'" title="Afficher ou masquer">'+sw+txt+'</button>';}
   $('sub-hist').textContent=hasE
     ? 'La courbe orange pointillée vaut '+state.params.predTarget+NB+'% de l\'engagement de chaque trimestre passé. C\'est un repère historique, pas l\'engagement recommandé ci-dessus.'
     : 'Ajoutez les Features engagées ou la prédictibilité pour comparer la fabrication à l\'engagement.';
-  $('lg-hist').innerHTML='<span>'+trait('c-s1','<circle class="f-s1" cx="13" cy="6" r="3.5"/>')+'Features fabriquées</span>'+
-    (hasE?'<span>'+trait('c-s2','<circle class="f-s2" cx="13" cy="6" r="3.5"/>')+'Features engagées</span>'+
-      '<span>'+trait('c-s2 dots')+state.params.predTarget+NB+'% de l\'engagement passé</span>':'')+
-    (hasP?'<span>'+trait('c-gris dots',croix(13,6))+'Prédictibilité (axe de droite)</span>'+
-      '<span>'+trait('c-obj tirets')+'Prédictibilité cible '+state.params.predTarget+NB+'%</span>':'')+
-    (eng!==undefined?'<span><svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true"><circle class="f-env" cx="13" cy="6" r="4.5"/></svg>Engagement envisagé (prochain trimestre)</span>':'')+
-    (tend?'<span>'+trait('c-tend tirets')+'Tendance des trimestres retenus (régression linéaire)</span>':'');
+  $('lg-hist').innerHTML=lg('fab',trait('c-s1','<circle class="f-s1" cx="13" cy="6" r="3.5"/>'),'Features fabriquées')+
+    (hasE?lg('eng',trait('c-s2','<circle class="f-s2" cx="13" cy="6" r="3.5"/>'),'Features engagées')+
+      lg('engc',trait('c-s2 dots'),state.params.predTarget+NB+'% de l\'engagement passé'):'')+
+    (hasP?lg('pred',trait('c-gris dots',croix(13,6)),'Prédictibilité (axe de droite)')+
+      lg('predc',trait('c-obj tirets'),'Prédictibilité cible '+state.params.predTarget+NB+'%'):'')+
+    (eng!==undefined?lg('env','<svg width="26" height="12" viewBox="0 0 26 12" aria-hidden="true"><circle class="f-env" cx="13" cy="6" r="4.5"/></svg>','Engagement envisagé (prochain trimestre)'):'')+
+    (tend?lg('tend',trait('c-tend tirets'),'Tendance des trimestres retenus (régression linéaire)'):'');
   if(!rows.length){box.innerHTML='<p class="vide">Aucun trimestre saisi.</p>';return;}
   // Le prochain trimestre : premier créneau vide après la dernière observation, sinon un créneau ajouté.
   var iEng=-1;
@@ -672,15 +682,19 @@ function rendreHistorique(eng,cEng){
   }
 
   var W=Math.max(280,el.clientWidth), H=W<520?300:380;
-  var m={t:30,r:hasP?50:14,b:32,l:50}, pw=W-m.l-m.r, ph=H-m.t-m.b, n=rows.length;
-  var max=1; rows.forEach(function(r){max=Math.max(max,r.made||0,r.committed||0);});
-  if(iEng>=0) max=Math.max(max,eng);
+  var m={t:30,r:axeP?50:14,b:32,l:50}, pw=W-m.l-m.r, ph=H-m.t-m.b, n=rows.length;
+  var max=1; rows.forEach(function(r){
+    if(dess.fab) max=Math.max(max,r.made||0);
+    if(dess.eng) max=Math.max(max,r.committed||0);
+    if(dess.engc) max=Math.max(max,(r.committed||0)*pred);
+  });
+  if(iEng>=0 && dess.env) max=Math.max(max,eng);
   var iFin=iEng>=0?iEng:rows.length-1, iDeb=-1;
   rows.forEach(function(r,i){if(iDeb<0 && retenus[r.quarter]) iDeb=i;});
-  if(tend && iDeb>=0) max=Math.max(max,tend.at(M.quarterIndex(rows[iFin].quarter)),tend.at(M.quarterIndex(rows[iDeb].quarter)));
+  if(dess.tend && iDeb>=0) max=Math.max(max,tend.at(M.quarterIndex(rows[iFin].quarter)),tend.at(M.quarterIndex(rows[iDeb].quarter)));
   var st=niceStep(max,5), top=Math.ceil(max/st)*st, K=top;
   // Alignement des axes : 100 Features à gauche = 100 % à droite (pour les petits volumes, 100 % = haut du graphe).
-  if(hasP && max>=50){top=Math.max(top,100); K=100;}
+  if(axeP && max>=50){top=Math.max(top,100); K=100;}
   var x=function(i){return m.l+(i+0.5)/n*pw;};
   var y=function(v){return m.t+(1-v/top)*ph;};
   var yp=function(p){return y(K*Math.min(1,p));};
@@ -691,14 +705,14 @@ function rendreHistorique(eng,cEng){
     s+='<line class="'+(v===0?'g-base':'g-grid')+'" x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+f1(y(v))+'" y2="'+f1(y(v))+'"/>';
     s+='<text class="g-tick" x="'+(m.l-8)+'" y="'+f1(y(v)+4)+'" text-anchor="end">'+n0.format(v)+'</text>';
   }
-  if(hasP){
+  if(axeP){
     s+='<text class="g-title" x="'+(W-m.r)+'" y="14" text-anchor="start">Préd.</text>';
     s+='<line class="g-base" x1="'+(W-m.r)+'" x2="'+(W-m.r)+'" y1="'+f1(yp(1))+'" y2="'+f1(y(0))+'"/>';
     [0,0.2,0.4,0.6,0.8,1].forEach(function(p){
       if(p>0 && p<1 && K/top*ph*0.2<14) return;
       s+='<text class="g-tick" x="'+(W-m.r+8)+'" y="'+f1(yp(p)+4)+'">'+Math.round(p*100)+NB+'%</text>';
     });
-    s+='<line class="g-line c-obj tirets" x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+f1(yp(pred))+'" y2="'+f1(yp(pred))+'"/>';
+    if(dess.predc) s+='<line class="g-line c-obj tirets" x1="'+m.l+'" x2="'+(W-m.r)+'" y1="'+f1(yp(pred))+'" y2="'+f1(yp(pred))+'"/>';
   }
   var saut=Math.ceil(46/(pw/n));
   rows.forEach(function(r,i){
@@ -714,34 +728,34 @@ function rendreHistorique(eng,cEng){
     });
     return d?'<path class="g-line '+cls+'" d="'+d+'"/>':'';
   }
-  if(hasP){
+  if(dess.pred){
     s+=ligneDe(function(r){return r.predictability;},yp,'c-gris dots');
     rows.forEach(function(r,i){if(r.predictability!==null) s+=croix(x(i),yp(r.predictability));});
   }
-  if(hasE){
-    s+=ligneDe(function(r){return r.committed===null?null:r.committed*pred;},y,'c-s2 dots');
+  if(dess.engc) s+=ligneDe(function(r){return r.committed===null?null:r.committed*pred;},y,'c-s2 dots');
+  if(dess.eng){
     s+=ligneDe(function(r){return r.committed;},y,'c-s2');
     rows.forEach(function(r,i){if(r.committed!==null) s+='<circle class="g-dot f-s2" cx="'+f1(x(i))+'" cy="'+f1(y(r.committed))+'" r="4.5"/>';});
   }
-  s+=ligneDe(function(r){return r.made;},y,'c-s1');
+  if(dess.fab) s+=ligneDe(function(r){return r.made;},y,'c-s1');
   rows.forEach(function(r,i){
-    if(r.made===null) return;
+    if(r.made===null || !dess.fab) return;
     s+=retenus[r.quarter]
       ? '<circle class="g-dot f-s1" cx="'+f1(x(i))+'" cy="'+f1(y(r.made))+'" r="4.5"/>'
       : '<circle class="f-surface c-s1" stroke-width="2" cx="'+f1(x(i))+'" cy="'+f1(y(r.made))+'" r="4.5"/>';
   });
-  if(tend && iDeb>=0 && iFin>iDeb){
+  if(dess.tend && iDeb>=0 && iFin>iDeb){
     var yD=Math.max(0,tend.at(M.quarterIndex(rows[iDeb].quarter))), yF=Math.max(0,tend.at(M.quarterIndex(rows[iFin].quarter)));
     s+='<line class="c-tend tirets" x1="'+f1(x(iDeb))+'" y1="'+f1(y(yD))+'" x2="'+f1(x(iFin))+'" y2="'+f1(y(yF))+'"/>';
   }
-  if(iEng>=0){
+  if(iEng>=0 && dess.env){
     s+='<circle class="g-dot f-env" cx="'+f1(x(iEng))+'" cy="'+f1(y(eng))+'" r="5.5"/>';
     s+='<text class="g-label" x="'+f1(x(iEng))+'" y="'+f1(y(eng)-12)+'" text-anchor="middle">'+n0.format(eng)+'</text>';
   }
   s+='<line class="g-xhair" visibility="hidden" y1="'+m.t+'" y2="'+f1(y(0))+'"/>';
   s+='</svg>';
   box.innerHTML=s;
-  el._geo={m:m,pw:pw,W:W,n:n,x:x,y:y,rows:rows,retenus:retenus,pred:pred,iEng:iEng,eng:eng,cEng:cEng,tend:tend};
+  el._geo={m:m,pw:pw,W:W,n:n,x:x,y:y,rows:rows,retenus:retenus,pred:pred,iEng:iEng,eng:eng,cEng:cEng,tend:tend,dess:dess};
 }
 function brancherHistorique(){
   var el=$('c-hist'), tip=el.querySelector('.tip');
@@ -751,22 +765,29 @@ function brancherHistorique(){
     var i=Math.max(0,Math.min(g.n-1,Math.floor((px-g.m.l)/g.pw*g.n))), row=g.rows[i], cx=g.x(i);
     var l=el.querySelector('.g-xhair');
     l.setAttribute('x1',cx); l.setAttribute('x2',cx); l.setAttribute('visibility','visible');
-    var h='<b>'+esc(M.quarterLabel(row.quarter))+'</b>';
-    if(i===g.iEng){
-      h+='<br>Engagement envisagé : '+nf.format(g.eng)+'<br>Confiance estimée : '+pct(g.cEng);
-      if(g.tend) h+='<br>Tendance : '+nf.format(Math.max(0,g.tend.at(M.quarterIndex(row.quarter))));
-    }else if(row.made===null && row.committed===null) h+='<br>Pas encore de données';
-    if(i!==g.iEng && g.tend && g.retenus[row.quarter]) h+='<br>Tendance : '+nf.format(Math.max(0,g.tend.at(M.quarterIndex(row.quarter))));
-    if(row.made!==null) h+='<br>Fabriquées : '+nf.format(row.made)+(g.retenus[row.quarter]?'':' (non retenu pour le calcul)');
-    if(row.committed!==null){
-      h+='<br>Engagées : '+nf.format(row.committed)+(row.derived==='committed'?' (calculé)':'');
-      h+='<br>'+Math.round(g.pred*100)+NB+'% de l\'engagement : '+nf.format(row.committed*g.pred);
+    var h='<b>'+esc(M.quarterLabel(row.quarter))+'</b>', d=g.dess, lignes=0;
+    if(i===g.iEng && d.env){
+      h+='<br>Engagement envisagé : '+nf.format(g.eng)+'<br>Confiance estimée : '+pct(g.cEng); lignes++;
+      if(d.tend) h+='<br>Tendance : '+nf.format(Math.max(0,g.tend.at(M.quarterIndex(row.quarter))));
     }
-    if(row.predictability!==null) h+='<br>Prédictibilité : '+Math.round(row.predictability*100)+NB+'%';
+    if(i!==g.iEng && d.tend && g.retenus[row.quarter]){ h+='<br>Tendance : '+nf.format(Math.max(0,g.tend.at(M.quarterIndex(row.quarter)))); lignes++; }
+    if(row.made!==null && d.fab){ h+='<br>Fabriquées : '+nf.format(row.made)+(g.retenus[row.quarter]?'':' (non retenu pour le calcul)'); lignes++; }
+    if(row.committed!==null){
+      if(d.eng){ h+='<br>Engagées : '+nf.format(row.committed)+(row.derived==='committed'?' (calculé)':''); lignes++; }
+      if(d.engc){ h+='<br>'+Math.round(g.pred*100)+NB+'% de l\'engagement : '+nf.format(row.committed*g.pred); lignes++; }
+    }
+    if(row.predictability!==null && d.pred){ h+='<br>Prédictibilité : '+Math.round(row.predictability*100)+NB+'%'; lignes++; }
+    if(!lignes) h+='<br>Pas de données affichées';
     tip.hidden=false; tip.innerHTML=h;
-    placer(tip,cx*k,g.y(i===g.iEng?g.eng:row.made!==null?row.made:0)*k,r.width);
+    placer(tip,cx*k,g.y(i===g.iEng&&g.dess.env?g.eng:row.made!==null&&g.dess.fab?row.made:0)*k,r.width);
   });
   el.addEventListener('pointerleave',function(){cacher(el);});
+  $('lg-hist').addEventListener('click',function(ev){
+    var b=ev.target.closest('button[data-k]'); if(!b) return;
+    var k=b.dataset.k, m=state.masquees||[];
+    state.masquees=m.indexOf(k)<0?m.concat([k]):m.filter(function(e){return e!==k;});
+    sauver(); rendre();
+  });
 }
 
 /* ---------- Tableau de saisie ---------- */

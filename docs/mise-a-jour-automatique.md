@@ -75,3 +75,29 @@ d'un appel au registre par minute.
   de fixer l'image sur un condensat précis (`ghcr.io/npelloux/futodama@sha256:…`,
   visible dans le journal du workflow) et de relancer `docker compose up -d` ;
   Watchtower ne remplace pas un conteneur épinglé sur un condensat.
+
+## Consignes pour un agent (Claude Code) sur le serveur
+
+Texte à lui donner tel quel, à lancer depuis le dossier du projet compose :
+
+> Mets en place Watchtower pour que le service `futodama` (image
+> `ghcr.io/npelloux/futodama:latest`) soit mis à jour automatiquement.
+>
+> 1. Trouve le fichier compose qui définit `futodama` dans ce dossier
+>    (`docker compose config --services` doit le lister). Ne touche à rien
+>    d'autre dans ce fichier que ce qui est décrit ici.
+> 2. Ajoute un service `watchtower` : image `containrrr/watchtower:1.7.1`,
+>    `restart: unless-stopped`, volume `/var/run/docker.sock:/var/run/docker.sock`,
+>    variable `TZ=Europe/Paris`, commande `--label-enable --cleanup --interval 300`.
+> 3. Ajoute le label `com.centurylinklabs.watchtower.enable=true` au seul
+>    service `futodama`. N'active pas Watchtower sur Traefik, Authelia ni sur
+>    les autres services.
+> 4. Vérifie le fichier avec `docker compose config` avant de lancer quoi que
+>    ce soit, puis `docker compose up -d watchtower futodama`.
+> 5. Contrôle : `docker logs watchtower` doit montrer une première vérification
+>    sans erreur, et `curl -s https://futodama.aelworks.fr/` doit toujours
+>    répondre la page. Si `docker compose pull futodama` demande une
+>    authentification, arrête-toi et dis-le-moi : il faudra un
+>    `docker login ghcr.io` et monter `~/.docker/config.json` dans Watchtower.
+> 6. Montre-moi le diff du fichier compose et la sortie des commandes. Ne
+>    redémarre aucun autre conteneur, ne supprime aucune image à la main.
